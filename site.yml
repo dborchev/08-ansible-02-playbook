@@ -4,29 +4,29 @@
   handlers:
     - name: Start clickhouse service
       become: true
-      ansible.builtin.service:
-        name: clickhouse-server
-        state: restarted
+      ansible.builtin.systemd:
+        name: clickhouse-server.service
+        state: started
+        enabled: yes
   tasks:
     - block:
         - name: Get clickhouse distrib
           ansible.builtin.get_url:
-            url: "https://packages.clickhouse.com/rpm/stable/{{ item }}-{{ clickhouse_version }}.noarch.rpm"
-            dest: "./{{ item }}-{{ clickhouse_version }}.rpm"
+            url: "https://packages.clickhouse.com/rpm/stable/{{ item.package }}-{{ clickhouse_version }}.{{ item.arch }}.rpm"
+            dest: "./{{ item.package }}-{{ clickhouse_version }}.rpm"
           with_items: "{{ clickhouse_packages }}"
-      rescue:
-        - name: Get clickhouse distrib
-          ansible.builtin.get_url:
-            url: "https://packages.clickhouse.com/rpm/stable/clickhouse-common-static-{{ clickhouse_version }}.x86_64.rpm"
-            dest: "./clickhouse-common-static-{{ clickhouse_version }}.rpm"
     - name: Install clickhouse packages
       become: true
       ansible.builtin.yum:
-        name:
-          - clickhouse-common-static-{{ clickhouse_version }}.rpm
-          - clickhouse-client-{{ clickhouse_version }}.rpm
-          - clickhouse-server-{{ clickhouse_version }}.rpm
+        name: "{{ item.package }}-{{ clickhouse_version }}.rpm"
+      with_items: "{{ clickhouse_packages }}"
       notify: Start clickhouse service
+    - name: Flush
+      meta: flush_handlers
+    - name: Wait for Clickhouse
+      ansible.builtin.wait_for:
+         port: 9000
+         delay: 30
     - name: Create database
       ansible.builtin.command: "clickhouse-client -q 'create database logs;'"
       register: create_db

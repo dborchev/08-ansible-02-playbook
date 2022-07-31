@@ -1,8 +1,0 @@
-version: '3.4'
-services:
-    clickhouse-01:
-        image: centos:centos7
-        stdin_open: true # docker run -i
-        tty: true        # docker run -t
-        container_name: clickhouse-01
-        command: bash

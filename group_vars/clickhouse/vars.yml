@@ -1,6 +1,10 @@
 ---
 clickhouse_version: "22.3.3.44"
 clickhouse_packages:
-  - clickhouse-client
-  - clickhouse-server
-  - clickhouse-common-static
+  - package: clickhouse-common-static
+    arch: x86_64
+  - package: clickhouse-client
+    arch: noarch
+  - package: clickhouse-server
+    arch: noarch
+
