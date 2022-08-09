@@ -73,7 +73,7 @@
 - name: Install Lighthouse
   hosts: lighthouse
   vars:
-      server_name: "{{ ansible_default_ipv4.address }}"
+    server_name: "{{ ansible_default_ipv4.address }}"
   handlers:
     - name: Start Nginx
       become: true
@@ -85,6 +85,8 @@
     - name: Install centos dependencies
       become: true
       ansible.builtin.command: amazon-linux-extras install epel -y
+      args:
+        creates: /etc/yum.repos.d/epel.repo
     - name: Create {{ document_root }}
       become: true
       ansible.builtin.file:
@@ -110,7 +112,7 @@
       ansible.builtin.unarchive:
         src: "https://github.com/VKCOM/lighthouse/archive/refs/heads/master.zip"
         dest: "{{ document_root }}"
-        remote_src: yes
+        remote_src: true
         owner: ec2-user
         mode: 0644
     - name: Install nginx
