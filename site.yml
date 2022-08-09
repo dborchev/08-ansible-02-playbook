@@ -72,7 +72,7 @@
       ansible.builtin.meta: flush_handlers
 - name: Install Lighthouse
   hosts: lighthouse
-    vars:
+  vars:
       server_name: "{{ ansible_default_ipv4.address }}"
   handlers:
     - name: Start Nginx
