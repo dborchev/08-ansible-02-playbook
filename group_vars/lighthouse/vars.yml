@@ -1,2 +1,3 @@
 ---
 app_root: "lighthouse-master"
+document_root: "/var/local/www"
