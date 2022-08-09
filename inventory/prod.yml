@@ -3,3 +3,11 @@
     hosts:
       clickhouse-01:
         ansible_host: clickhouse.netology.askbow.io
+  vector:
+    hosts:
+      vector-01:
+        ansible_host: vector.netology.askbow.io
+  lighthouse:
+    hosts:
+      lighthouse-01:
+        ansible_host: lighthouse.netology.askbow.io

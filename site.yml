@@ -33,7 +33,7 @@
       failed_when: create_db.rc != 0 and create_db.rc !=82
       changed_when: create_db.rc == 0
 - name: Install Vector
-  hosts: clickhouse
+  hosts: vector
   handlers:
     - name: Start Vector
       become: true
@@ -68,5 +68,74 @@
         owner: ec2-user
         group: ec2-user
       notify: Start Vector
+    - name: Force Service Start
+      ansible.builtin.meta: flush_handlers
+- name: Install Lighthouse
+  hosts: lighthouse
+  vars:
+    server_name: "{{ ansible_default_ipv4.address }}"
+  handlers:
+    - name: Start Nginx
+      become: true
+      ansible.builtin.systemd:
+        name: nginx
+        state: restarted
+        enabled: true
+  pre_tasks:
+    - name: Install centos dependencies
+      become: true
+      ansible.builtin.command: amazon-linux-extras install epel -y
+      args:
+        creates: /etc/yum.repos.d/epel.repo
+    - name: Create {{ document_root }}
+      become: true
+      ansible.builtin.file:
+        path: "{{ document_root }}"
+        state: directory
+        owner: ec2-user
+        group: ec2-user
+        mode: 0775
+    - name: Create nginx directories
+      become: true
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        owner: ec2-user
+        group: ec2-user
+        mode: 0775
+      with_items:
+        - "/etc/nginx/sites-available/"
+        - "/etc/nginx/sites-enabled/"
+  tasks:
+    - name: Get and Unpack Lighthouse
+      become: true
+      ansible.builtin.unarchive:
+        src: "https://github.com/VKCOM/lighthouse/archive/refs/heads/master.zip"
+        dest: "{{ document_root }}"
+        remote_src: true
+        owner: ec2-user
+        mode: 0644
+    - name: Install nginx
+      become: true
+      ansible.builtin.yum:
+        name: "nginx"
+      notify: Start Nginx
+    - name: Force Service Start
+      ansible.builtin.meta: flush_handlers
+    - name: Setup Nginx Config
+      become: true
+      ansible.builtin.template:
+        src: "nginx.conf.j2"
+        dest: "/etc/nginx/sites-available/default"
+        mode: 0644
+        owner: ec2-user
+        group: ec2-user
+      notify: Start Nginx
+    - name: Enable Nginx Config
+      ansible.builtin.file:
+        src: "/etc/nginx/sites-available/default"
+        dest: "/etc/nginx/sites-enabled/default"
+        state: link
+      notify: Start Nginx
     - name: Force Service Start
       ansible.builtin.meta: flush_handlers

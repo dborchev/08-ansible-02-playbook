@@ -1,6 +1,4 @@
 ---
-vector_version: "0.23.0"
-vector_arch: x86_64
 clickhouse_version: "22.3.3.44"
 clickhouse_packages:
   - package: clickhouse-common-static
