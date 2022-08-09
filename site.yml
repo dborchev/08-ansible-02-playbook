@@ -83,9 +83,13 @@
         enabled: true
   tasks:
     - name: Create {{ document_root }}
+      become: true
       ansible.builtin.file:
         path: "{{ document_root }}"
         state: directory
+        owner: nginx
+        group: nginx
+        mode: 0775
     - name: Get and Unpack Lighthouse
       become: true
       ansible.builtin.unarchive:
