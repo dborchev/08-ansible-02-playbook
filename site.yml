@@ -87,8 +87,8 @@
       ansible.builtin.file:
         path: "{{ document_root }}"
         state: directory
-        owner: nginx
-        group: nginx
+        owner: ec2-user
+        group: ec2-user
         mode: 0775
     - name: Get and Unpack Lighthouse
       become: true
@@ -96,7 +96,7 @@
         src: "https://github.com/VKCOM/lighthouse/archive/refs/heads/master.zip"
         dest: "{{ document_root }}"
         remote_src: yes
-        owner: root
+        owner: ec2-user
         mode: 0644
     - name: Install nginx
       become: true
@@ -111,8 +111,8 @@
         src: files/nginx.conf.j2
         dest: /etc/nginx/sites-available/default
         mode: 0644
-        owner: nginx
-        group: nginx
+        owner: ec2-user
+        group: ec2-user
       notify: Restart Nginx
     - name: Enable Nginx Config
       ansible.builtin.file:
