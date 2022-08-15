@@ -1,79 +1,28 @@
 ---
 - name: Install Clickhouse
   hosts: clickhouse
-  handlers:
-    - name: Start clickhouse service
-      become: true
-      ansible.builtin.systemd:
-        name: clickhouse-server.service
-        state: started
-        enabled: true
-  tasks:
-    - name: Get clickhouse distrib
-      ansible.builtin.get_url:
-        url: "https://packages.clickhouse.com/rpm/stable/{{ item.package }}-{{ clickhouse_version }}.{{ item.arch }}.rpm"
-        dest: "./{{ item.package }}-{{ clickhouse_version }}.rpm"
-        mode: 0600
-      with_items: "{{ clickhouse_packages }}"
-    - name: Install clickhouse packages
-      become: true
-      ansible.builtin.yum:
-        name: "{{ item.package }}-{{ clickhouse_version }}.rpm"
-      with_items: "{{ clickhouse_packages }}"
-      notify: Start clickhouse service
-    - name: Force Service Start
-      ansible.builtin.meta: flush_handlers
+  remote_user: root
+  vars:
+      clickhouse_tcp_port: 9000
+      clickhouse_dbs_custom:
+        - { name: logs }
+  roles:
+      - ansible-clickhouse
+  post_tasks:
     - name: Wait for Clickhouse
       ansible.builtin.wait_for:
         port: 9000
         delay: 30
-    - name: Create database
-      ansible.builtin.command: "clickhouse-client -q 'create database logs;'"
-      register: create_db
-      failed_when: create_db.rc != 0 and create_db.rc !=82
-      changed_when: create_db.rc == 0
 - name: Install Vector
   hosts: vector
-  handlers:
-    - name: Start Vector
-      become: true
-      ansible.builtin.systemd:
-        name: vector
-        state: restarted
-        enabled: true
-  tasks:
-    - name: Get Vector Distrib
-      ansible.builtin.get_url:
-        url: "https://packages.timber.io/vector/{{ vector_version }}/vector-{{ vector_version }}-1.{{ vector_arch }}.rpm"
-        dest: "./vector-{{ vector_version }}-1.x86_64.rpm"
-        mode: 0600
-    - name: Install Vector package
-      become: true
-      ansible.builtin.yum:
-        name: "vector-{{ vector_version }}-1.x86_64.rpm"
-    - name: Copy Service Script
-      become: true
-      ansible.builtin.template:
-        src: "vector.service.j2"
-        dest: "/etc/systemd/system/vector.service"
-        mode: 0644
-        owner: root
-        group: root
-    - name: Configure Vector
-      become: true
-      ansible.builtin.template:
-        src: vector.j2
-        dest: "/etc/vector/vector.toml"
-        mode: 0644
-        owner: ec2-user
-        group: ec2-user
-      notify: Start Vector
-    - name: Force Service Start
-      ansible.builtin.meta: flush_handlers
+  roles:
+    - vector-role
 - name: Install Lighthouse
   hosts: lighthouse
   vars:
     server_name: "{{ ansible_default_ipv4.address }}"
+  roles:
+    - lighthouse-role
   handlers:
     - name: Start Nginx
       become: true
@@ -106,15 +55,7 @@
       with_items:
         - "/etc/nginx/sites-available/"
         - "/etc/nginx/sites-enabled/"
-  tasks:
-    - name: Get and Unpack Lighthouse
-      become: true
-      ansible.builtin.unarchive:
-        src: "https://github.com/VKCOM/lighthouse/archive/refs/heads/master.zip"
-        dest: "{{ document_root }}"
-        remote_src: true
-        owner: ec2-user
-        mode: 0644
+  post_tasks:
     - name: Install nginx
       become: true
       ansible.builtin.yum:
